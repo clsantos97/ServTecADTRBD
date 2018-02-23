@@ -139,20 +139,20 @@ public class FacturaCuController implements Initializable {
         List<ClienteBean> clientes = (List) clienteManager.getClientes();
 
         if (factura != null) {
-            cbCliente.getItems().clear();
-            cbCliente.getItems().add(factura.getCliente());
-            cbCliente.getSelectionModel().selectFirst();
-            cbCliente.setDisable(true);
-
-            String fdate = dateFormat.format(factura.getDate());
-            dpDate.setValue(LocalDate.parse(fdate, dateFormatter));
-            dpDate.setDisable(true);
-
-            if (factura.getServicios() != null) {
-                tvServicios.setItems(FXCollections.observableArrayList(factura.getServicios()));
-            } else {
-                tvServicios.setItems(FXCollections.observableArrayList(new ArrayList<ServicioBean>()));
-            }
+//            cbCliente.getItems().clear();
+//            cbCliente.getItems().add(factura.getCliente());
+//            cbCliente.getSelectionModel().selectFirst();
+//            cbCliente.setDisable(true);
+//
+//            String fdate = dateFormat.format(factura.getDate());
+//            dpDate.setValue(LocalDate.parse(fdate, dateFormatter));
+//            dpDate.setDisable(true);
+//
+//            if (factura.getServicios() != null) {
+//                tvServicios.setItems(FXCollections.observableArrayList(factura.getServicios()));
+//            } else {
+//                tvServicios.setItems(FXCollections.observableArrayList(new ArrayList<ServicioBean>()));
+//            }
             
             tvServicios.getItems().forEach(s -> total+=s.getPrice());
             lblTotal.setText(String.valueOf(total));
@@ -208,8 +208,8 @@ public class FacturaCuController implements Initializable {
     
     public void save(){
         factura.setDate(Date.from(dpDate.getValue().atStartOfDay(ZoneId.systemDefault()).toInstant()));
-        factura.setCliente(cbCliente.getSelectionModel().getSelectedItem());
-        factura.setServicios(tvServicios.getItems());
+//        factura.setCliente(cbCliente.getSelectionModel().getSelectedItem());
+//        factura.setServicios(tvServicios.getItems());
         factura.setTotal(total);
         
         if(isValid(factura)){
@@ -227,23 +227,23 @@ public class FacturaCuController implements Initializable {
     public boolean isValid(FacturaBean factura){
         boolean res = true;
         
-        if(factura.getServicios()==null || factura.getServicios().isEmpty()){
-            res=false;
-            logger.info("factura invalida, servicios."+factura.getServicios().toString());
-        }
-        if(factura.getCliente().getId()<1 || factura.getCliente()==null){
-            res=false;
-            logger.info("factura invalida, idcliente."+factura.getCliente());
-            logger.info("cbcliente."+cbCliente.getValue().getId());
-        }
-        if(factura.getDate()==null){
-            res=false;
-            logger.info("factura invalida, date."+factura.getDate());
-        }
-        if(factura.getTotal()<0 || factura.getTotal()==null){
-            res=false;
-            logger.info("factura invalida, total."+factura.getTotal());
-        }
+//        if(factura.getServicios()==null || factura.getServicios().isEmpty()){
+//            res=false;
+//            logger.info("factura invalida, servicios."+factura.getServicios().toString());
+//        }
+//        if(factura.getCliente().getId()<1 || factura.getCliente()==null){
+//            res=false;
+//            logger.info("factura invalida, idcliente."+factura.getCliente());
+//            logger.info("cbcliente."+cbCliente.getValue().getId());
+//        }
+//        if(factura.getDate()==null){
+//            res=false;
+//            logger.info("factura invalida, date."+factura.getDate());
+//        }
+//        if(factura.getTotal()<0 || factura.getTotal()==null){
+//            res=false;
+//            logger.info("factura invalida, total."+factura.getTotal());
+//        }
         
         return res;
     }

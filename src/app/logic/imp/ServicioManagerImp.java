@@ -5,19 +5,19 @@
  */
 package app.logic.imp;
 
-import app.config.db.HibernateUtil;
+import app.config.db.DbManager;
+import app.gui.controller.HomeController;
 import app.logic.interfaces.ServicioManager;
 import app.logic.pojo.ServicioBean;
-import app.model.ServicioEntity;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.hibernate.HibernateException;
-import org.hibernate.Query;
-import org.hibernate.Session;
-import org.hibernate.Transaction;
 
 /**
  *
@@ -26,130 +26,165 @@ import org.hibernate.Transaction;
 public class ServicioManagerImp implements ServicioManager {
 
     private static final Logger logger = Logger.getLogger(ServicioManagerImp.class.getName());
+    private static DbManager db = DbManager.getDbConn();
 
     @Override
     public Collection<ServicioBean> getServicios() {
-        logger.log(Level.INFO, "Getting all servicios");
-        Session session = HibernateUtil.getSessionFactory().openSession();
-        List<ServicioBean> servicioList = new ArrayList();
+        List<ServicioBean> servicios = new ArrayList<>();
 
         try {
-            List<ServicioEntity> servicioEntities = session.createQuery("from ServicioEntity").list();
-            if (servicioEntities != null) {
-                servicioEntities.forEach(s
-                        -> servicioList.add(new ServicioBean(s.getId(), s.getName(), s.getDescription(), s.getPrice())));
-            }
 
-        } catch (HibernateException e) {
-            logger.log(Level.SEVERE, "An error has ocurred while getting all servicios");
-        } finally {
-            session.close();
+            ResultSet rs = db.query("SELECT * FROM servicio");
+            while (rs.next()) {
+                servicios.add(new ServicioBean(rs.getInt("id"), rs.getString("name"),
+                        rs.getString("description"), rs.getDouble("price")));
+            }
+            rs.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(ServicioManagerImp.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return servicioList;
+        return servicios;
     }
 
     @Override
     public boolean deleteServicio(ServicioBean servicio) {
-        logger.log(Level.INFO, "Deleting servicio <{0}>.", servicio.getName());
         boolean res = false;
-        Session session = HibernateUtil.getSessionFactory().openSession();
-        Transaction tx = null;
+        Connection dbConnection = null;
+        PreparedStatement preparedStatement = null;
 
-        String hql = "from ServicioEntity where id = :id";
+        String insertTableSQL = "DELETE FROM servicio WHERE id = ?";
 
         try {
-            tx = session.beginTransaction();
-            Query query = session.createQuery(hql);
-            query.setParameter("id", servicio.getId());
-            ServicioEntity servicioToDelete = (ServicioEntity) query.uniqueResult();
+            dbConnection = db.getConn();
+            preparedStatement = dbConnection.prepareStatement(insertTableSQL);
 
-            if (servicioToDelete != null) {
-                session.delete(servicioToDelete);
+            preparedStatement.setInt(1, servicio.getId());
 
-                logger.log(Level.INFO, "Servicio id<{0}>, name<{1}> deleted.", new Object[]{servicio.getId(), servicio.getName()});
-            } else {
-                logger.log(Level.INFO, "Servicio id<{0}> not found.", servicio.getId());
-            }
-            tx.commit();
+            // execute insert SQL stetement
+            preparedStatement.executeUpdate();
             res = true;
-            logger.log(Level.INFO, "Servicio {0} deleted.", servicio.getName());
-        } catch (HibernateException e) {
-            if (tx != null) {
-                tx.rollback();
-            }
-            logger.severe("An error has ocurred while deleting servicio <" + servicio.getName() + ">:");
+            logger.log(Level.INFO, "Servicio <{0}> eliminado.", servicio.getName());
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Ha ocurrido un error al eliminar el servicio: {0}", e.getMessage());
         } finally {
-            session.close();
+
+//            try {
+//                if (preparedStatement != null) {
+//                    preparedStatement.close();
+//                }
+//                if (dbConnection != null) {
+//                    dbConnection.close();
+//                }
+//            } catch (SQLException ex) {
+//                Logger.getLogger(ServicioManagerImp.class.getName()).log(Level.SEVERE, null, ex);
+//            }
         }
         return res;
     }
 
     @Override
     public boolean updateServicio(ServicioBean servicio) {
-        logger.log(Level.INFO, "Updating servicio <{0}>.", servicio.getId());
-        Session session = HibernateUtil.getSessionFactory().openSession();
-        Transaction tx = null;
         boolean res = false;
-        String hql = "from ServicioEntity where id = :id";
+        Connection dbConnection = null;
+        PreparedStatement preparedStatement = null;
+
+        String insertTableSQL = "UPDATE servicio "
+                + "SET name = ?, description = ?, price = ? "
+                + "WHERE id = ?;";
 
         try {
-            tx = session.beginTransaction();
+            dbConnection = db.getConn();
+            preparedStatement = dbConnection.prepareStatement(insertTableSQL);
 
-            // Retrieve ingredient to update
-            Query query = session.createQuery(hql);
-            query.setParameter("id", servicio.getId());
-            ServicioEntity servicioToUpdate = (ServicioEntity) query.uniqueResult();
+            //preparedStatement.setInt(1, servicio.getId());
+            preparedStatement.setString(1, servicio.getName());
+            preparedStatement.setString(2, servicio.getDescription());
+            preparedStatement.setDouble(3, servicio.getPrice());
+            preparedStatement.setInt(4, servicio.getId());
 
-            if (servicioToUpdate != null) {
-                // Update ingredient attributes
-                servicioToUpdate.setName(servicio.getName());
-                servicioToUpdate.setDescription(servicio.getDescription());
-                servicioToUpdate.setPrice(servicio.getPrice());
-   
-
-                // Update servicio in db
-                session.update(servicioToUpdate);
-            }
-
-            tx.commit();
+            // execute insert SQL stetement
+            preparedStatement.executeUpdate();
             res = true;
-        } catch (HibernateException e) {
-            if (tx != null) {
-                tx.rollback();
-            }
-            logger.log(Level.SEVERE, "An error has ocurred while updating servicio<{0}>:", servicio.getId());
+            logger.log(Level.INFO, "Servicio <{0}> modificado.", servicio.getName());
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Ha ocurrido un error al modificar el servicio: {0}", e.getMessage());
         } finally {
-            session.close();
+
+//            try {
+//                if (preparedStatement != null) {
+//                    preparedStatement.close();
+//                }
+//                if (dbConnection != null) {
+//                    dbConnection.close();
+//                }
+//            } catch (SQLException ex) {
+//                Logger.getLogger(ServicioManagerImp.class.getName()).log(Level.SEVERE, null, ex);
+//            }
         }
         return res;
     }
 
     @Override
     public boolean insertServicio(ServicioBean servicio) {
-        logger.log(Level.INFO, "Creating servicio <{0}>.", servicio.getName());
+
         boolean res = false;
-        Session session = HibernateUtil.getSessionFactory().openSession();
-        Transaction tx = null;
+        Connection dbConnection = null;
+        PreparedStatement preparedStatement = null;
+
+        String insertTableSQL = "INSERT INTO servicio"
+                + "(name, description, price) VALUES"
+                + "(?,?,?)";
 
         try {
-            tx = session.beginTransaction();
-            session.save(new ServicioEntity(
-                    servicio.getName(),
-                    servicio.getDescription(),
-                    servicio.getPrice()
-            ));
-            tx.commit();
+            dbConnection = db.getConn();
+            preparedStatement = dbConnection.prepareStatement(insertTableSQL);
+
+            preparedStatement.setString(1, servicio.getName());
+            preparedStatement.setString(2, servicio.getDescription());
+            preparedStatement.setDouble(3, servicio.getPrice());
+
+            // execute insert SQL stetement
+            preparedStatement.executeUpdate();
             res = true;
-            logger.log(Level.INFO, "Servicio {0} created.", servicio.getName());
-        } catch (HibernateException e) {
-            if (tx != null) {
-                tx.rollback();
-            }
-            logger.severe("An error has ocurred while creating servicio <" + servicio.getName() + ">:");
+            logger.log(Level.INFO, "Servicio <{0}> creado.", servicio.getName());
+
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "Ha ocurrido un error al crear el servicio: {0}", e.getMessage());
         } finally {
-            session.close();
+
+//            try {
+//                if (preparedStatement != null) {
+//                    preparedStatement.close();
+//                }
+//                if (dbConnection != null) {
+//                    dbConnection.close();
+//                }
+//            } catch (SQLException ex) {
+//                Logger.getLogger(ServicioManagerImp.class.getName()).log(Level.SEVERE, null, ex);
+//            }
         }
+
         return res;
+    }
+
+    @Override
+    public Collection<ServicioBean> getServiciosByFactura(Integer id) {
+        List<ServicioBean> servicios = new ArrayList<>();
+
+        try {
+
+            ResultSet rs = db.query("SELECT * FROM ");
+            while (rs.next()) {
+                servicios.add(new ServicioBean(rs.getInt("id"), rs.getString("name"),
+                        rs.getString("description"), rs.getDouble("price")));
+            }
+            rs.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(ServicioManagerImp.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return servicios;
     }
 
 }

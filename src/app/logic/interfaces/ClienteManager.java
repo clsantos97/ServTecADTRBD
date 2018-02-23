@@ -17,4 +17,5 @@ public interface ClienteManager {
     public boolean deleteCliente(ClienteBean cliente);
     public boolean updateCliente(ClienteBean cliente);
     public boolean insertCliente(ClienteBean cliente);
+    public ClienteBean getClienteById(Integer id);
 }

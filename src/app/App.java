@@ -6,8 +6,6 @@
 package app;
 
 import app.gui.controller.HomeController;
-import app.logic.interfaces.ClienteManager;
-import app.logic.imp.ClienteManagerImp;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;

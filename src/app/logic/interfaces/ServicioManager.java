@@ -17,4 +17,5 @@ public interface ServicioManager {
     public boolean deleteServicio(ServicioBean servicio);
     public boolean updateServicio(ServicioBean servicio);
     public boolean insertServicio(ServicioBean servicio);
+    public Collection<ServicioBean> getServiciosByFactura(Integer id);
 }
